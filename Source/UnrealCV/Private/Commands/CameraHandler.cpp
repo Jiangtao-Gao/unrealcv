@@ -19,6 +19,7 @@
 
 #include "UnrealcvStats.h"
 #include "UnrealClient.h"
+#include "UnrealcvLog.h"
 
 DECLARE_CYCLE_STAT(TEXT("FCameraHandler::GetCameraLit"), STAT_GetCameraLit, STATGROUP_UnrealCV);
 DECLARE_CYCLE_STAT(TEXT("FCameraHandler::SaveData"), STAT_SaveData, STATGROUP_UnrealCV);
@@ -289,7 +290,7 @@ FExecStatus FCameraHandler::GetCameraDepth(const TArray<FString>& Args)
 {
 	FExecStatus ExecStatus = FExecStatus::OK();
 	UFusionCamSensor* FusionCamSensor = GetCamera(Args, ExecStatus);
-	if (!IsValid(FusionCamSensor)) return ExecStatus; 
+	if (!IsValid(FusionCamSensor)) return ExecStatus;
 
 	TArray<float> Data;
 	int Width, Height;
@@ -441,15 +442,59 @@ FExecStatus FCameraHandler::SetFOV(const TArray<FString>& Args)
 FExecStatus FCameraHandler::SpawnCamera(const TArray<FString>& Args)
 {
 	UWorld* GameWorld = FUnrealcvServer::Get().GetWorld();
-	AActor* Actor = GameWorld->SpawnActor(AFusionCameraActor::StaticClass());
-	if (IsValid(Actor))
+	if (!IsValid(GameWorld))
 	{
-		return FExecStatus::OK(Actor->GetName());
+		return FExecStatus::Error("GameWorld is invalid");
 	}
-	else
+	
+	AActor* Actor = GameWorld->SpawnActor(AFusionCameraActor::StaticClass());
+	if (!IsValid(Actor))
 	{
 		return FExecStatus::Error("Failed to spawn actor");
 	}
+	
+	// Get the FusionCamSensor from the spawned actor
+	AFusionCameraActor* FusionCameraActor = Cast<AFusionCameraActor>(Actor);
+	if (!IsValid(FusionCameraActor))
+	{
+		return FExecStatus::Error("Failed to cast to AFusionCameraActor");
+	}
+	
+	TArray<UFusionCamSensor*> Sensors = FusionCameraActor->GetSensors();
+	if (Sensors.Num() == 0)
+	{
+		return FExecStatus::Error("Failed to get sensor from spawned actor: no sensors found");
+	}
+	
+	UFusionCamSensor* NewSensor = Sensors[0];
+	if (!IsValid(NewSensor))
+	{
+		return FExecStatus::Error("Failed to get sensor from spawned actor: sensor is invalid");
+	}
+	
+	// Ensure sensor is registered
+	if (!NewSensor->IsRegistered())
+	{
+		NewSensor->RegisterComponent();
+	}
+	
+	// Get the sensor list and find the index of the new sensor
+	TArray<UFusionCamSensor*> SensorList = USensorBPLib::GetFusionSensorList();
+	int SensorIndex = SensorList.Find(NewSensor);
+	
+	if (SensorIndex == INDEX_NONE)
+	{
+		// If not found, retry after the list is updated
+		SensorList = USensorBPLib::GetFusionSensorList();
+		SensorIndex = SensorList.Find(NewSensor);
+	}
+	
+	if (SensorIndex == INDEX_NONE)
+	{
+		return FExecStatus::Error("Failed to find sensor in sensor list");
+	}
+	
+	return FExecStatus::OK(FString::Printf(TEXT("%d"), SensorIndex));
 }
 
 FExecStatus FCameraHandler::GetSize(const TArray<FString>& Args)

@@ -42,3 +42,8 @@ docs/doxygen/
 !*.uplugin
 !*.bat
 # !*.ipynb  Add ipython notebook and png, jpg by force
+
+# Allow submodules
+!vr_pose_renderer/
+vr_pose_renderer/*
+!vr_pose_renderer/.git

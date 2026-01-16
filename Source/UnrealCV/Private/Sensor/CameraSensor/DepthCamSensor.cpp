@@ -21,14 +21,17 @@ void UDepthCamSensor::InitTextureTarget(int filmWidth, int filmHeight)
 
 void UDepthCamSensor::CaptureDepth(TArray<float>& DepthData, int& Width, int& Height)
 {
-	if (!bIgnoreTransparentObjects)
-	{
-		TArray<TWeakObjectPtr<UPrimitiveComponent> > ComponentList;
-		UAnnotationCamSensor::GetAnnotationComponents(this->GetWorld(), ComponentList);
-		this->ShowOnlyComponents = ComponentList;
-		this->PrimitiveRenderMode = ESceneCapturePrimitiveRenderMode::PRM_UseShowOnlyList;
-		this->ShowFlags.SetMaterials(false); // This will make annotation component visible
-	}
+	// FIX: Use default scene depth rendering instead of ShowOnlyComponents
+	// 
+	// Problem: When using ShowOnlyComponents with PRM_UseShowOnlyList mode,
+	// newly spawned cameras would have corrupted depth data (left half of image invalid).
+	// This was because the ShowOnlyComponents list was not properly synchronized
+	// with the new camera's rendering state.
+	//
+	// Solution: Use default scene depth rendering (PRM_RenderScenePrimitives) which
+	// renders all scene primitives without filtering.
+	this->PrimitiveRenderMode = ESceneCapturePrimitiveRenderMode::PRM_RenderScenePrimitives;
+	this->ShowOnlyComponents.Empty();
 
 	if (!CheckTextureTarget()) return;
 	this->CaptureScene();
