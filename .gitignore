@@ -41,6 +41,7 @@ docs/doxygen/
 !*.ini
 !*.uplugin
 !*.bat
+!*.uasset
 # !*.ipynb  Add ipython notebook and png, jpg by force
 
 # Allow submodules
