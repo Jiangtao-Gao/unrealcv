@@ -331,6 +331,36 @@ FExecStatus FCameraHandler::GetCameraFlow(const TArray<FString>& Args)
 	return ExecStatus;
 }
 
+FExecStatus FCameraHandler::GetCameraVelocity(const TArray<FString>& Args)
+{
+	FExecStatus ExecStatus = FExecStatus::OK();
+	UFusionCamSensor* FusionCamSensor = GetCamera(Args, ExecStatus);
+	if (!IsValid(FusionCamSensor)) return ExecStatus;
+
+	TArray<FVector2D> VelocityData;
+	int Width, Height;
+	FusionCamSensor->GetVelocity(VelocityData, Width, Height);
+	
+	if (VelocityData.Num() == 0)
+	{
+		UE_LOG(LogTemp, Error, TEXT("%s: Velocity data is empty"), *FString(__FUNCTION__));
+		return FExecStatus::Error("Velocity data is empty");
+	}
+
+	// Convert FVector2D to float array for serialization
+	TArray<float> FlatData;
+	FlatData.Reserve(Width * Height * 2);
+	
+	for (const FVector2D& Vel : VelocityData)
+	{
+		FlatData.Add(Vel.X);
+		FlatData.Add(Vel.Y);
+	}
+
+	SaveData(FlatData, Width, Height, Args, ExecStatus);
+	return ExecStatus;
+}
+
 FExecStatus FCameraHandler::GetCameraObjMask(const TArray<FString>& Args)
 {
 	FExecStatus ExecStatus = FExecStatus::OK();
@@ -865,6 +895,11 @@ void FCameraHandler::RegisterCommands()
 		"vget /camera/[uint]/optical_flow [str]",
 		FDispatcherDelegate::CreateRaw(this, &FCameraHandler::GetCameraFlow),
 		"Get npy binary data from optical flow sensor");
+
+	CommandDispatcher->BindCommand(
+		"vget /camera/[uint]/velocity [str]",
+		FDispatcherDelegate::CreateRaw(this, &FCameraHandler::GetCameraVelocity),
+		"Get 2D velocity (motion vectors) from engine, includes camera and object motion");
 
 	CommandDispatcher->BindCommand(
 		"vget /camera/[uint]/object_mask [str]",

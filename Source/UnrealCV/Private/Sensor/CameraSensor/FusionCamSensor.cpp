@@ -12,6 +12,7 @@
 #include "NormalCamSensor.h"
 #include "AnnotationCamSensor.h"
 #include "FlowCamSensor.h"
+#include "VelocityCamSensor.h"
 
 UFusionCamSensor::UFusionCamSensor(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -45,6 +46,11 @@ UFusionCamSensor::UFusionCamSensor(const FObjectInitializer& ObjectInitializer)
 	// FlowCamSensor = NewObject<UFlowCamSensor>(this, UFlowCamSensor::StaticClass()); /*NewObject with empty name can't be used to create default subobjects*/
 	FusionSensors.Add(FlowCamSensor);
 
+	// VelocityCamSensor - similar to FlowCamSensor
+	ComponentName = FString::Printf(TEXT("%s_%s"), *this->GetName(), TEXT("VelocityCamSensor"));
+	VelocityCamSensor = CreateDefaultSubobject<UVelocityCamSensor>(*ComponentName);
+	FusionSensors.Add(VelocityCamSensor);
+
 	// The config loading code should not be placed into the ctor, otherwise it will break the copy behavior
 	FServerConfig& Config = FUnrealcvServer::Get().Config;
 	FilmWidth = Config.Width == 0 ? 640 : Config.Width;
@@ -57,7 +63,11 @@ UFusionCamSensor::UFusionCamSensor(const FObjectInitializer& ObjectInitializer)
 	{
 		if (IsValid(Sensor))
 		{
-			if (Sensor != FlowCamSensor) { Sensor->SetupAttachment(this); }
+			// Skip FlowCamSensor and VelocityCamSensor - they will be attached in BeginPlay
+			if (Sensor != FlowCamSensor && Sensor != VelocityCamSensor) 
+			{ 
+				Sensor->SetupAttachment(this); 
+			}
 		}
 		else
 		{
@@ -105,6 +115,18 @@ void UFusionCamSensor::BeginPlay()
 	else 
 	{
 		UE_LOG(LogUnrealCV, Error, TEXT("FlowCamSensor is not initialized. Flow data will be empty."));
+	}
+
+	// Attach VelocityCamSensor - same as FlowCamSensor
+	if (IsValid(VelocityCamSensor))
+	{
+		VelocityCamSensor->AttachToComponent(this, FAttachmentTransformRules::KeepRelativeTransform);
+		const FTransform LitTransform = LitCamSensor->GetComponentTransform();
+		VelocityCamSensor->SetWorldTransform(LitTransform);
+	}
+	else
+	{
+		UE_LOG(LogUnrealCV, Error, TEXT("VelocityCamSensor is not initialized. Velocity data will be empty."));
 	}
 
 	SetFilmSize(FilmWidth, FilmHeight);
@@ -175,6 +197,20 @@ void UFusionCamSensor::GetFlow(TArray<FColor>& FlowData, int& Width, int& Height
 	this->FlowCamSensor->Capture(FlowData, Width, Height);
 }
 
+// velocity (2D motion vectors)
+void UFusionCamSensor::GetVelocity(TArray<FVector2D>& VelocityData, int& Width, int& Height)
+{
+	if (!VelocityCamSensor)
+	{
+		UE_LOG(LogUnrealCV, Error, TEXT("VelocityCamSensor is not initialized. Velocity data will be empty."));
+		VelocityData.Empty();
+		Width = 0;
+		Height = 0;
+		return;
+	}
+	this->VelocityCamSensor->CaptureVelocity(VelocityData, Width, Height);
+}
+
 // Semantic
 void UFusionCamSensor::GetSeg(TArray<FColor>& ObjMaskData, int& Width, int& Height, ESegMode SegMode)
 {
@@ -212,7 +248,7 @@ void UFusionCamSensor::SetFilmSize(int Width, int Height)
 	}
 
 	// There are still bugs in compiled blueprints, I tried to fix them in the ctor, but it still fails.
-	// So I have to manually init the texture target for FlowCamSensor.
+	// So I have to manually init the texture target for FlowCamSensor and VelocityCamSensor.
 	if (IsValid(FlowCamSensor))
 	{
 		FlowCamSensor->SetFilmSize(Width, Height);
@@ -220,6 +256,15 @@ void UFusionCamSensor::SetFilmSize(int Width, int Height)
 	else
 	{
 		UE_LOG(LogUnrealCV, Error, TEXT("FlowCamSensor is not initialized. Flow data will be empty."));
+	}
+
+	if (IsValid(VelocityCamSensor))
+	{
+		VelocityCamSensor->SetFilmSize(Width, Height);
+	}
+	else
+	{
+		UE_LOG(LogUnrealCV, Error, TEXT("VelocityCamSensor is not initialized. Velocity data will be empty."));
 	}
 
 	for (int i = 0; i < FusionSensors.Num(); i++)

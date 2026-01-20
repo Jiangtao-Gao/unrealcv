@@ -64,6 +64,10 @@ public:
 	UFUNCTION(BlueprintPure, Category = "unrealcv")
 	void GetFlow(TArray<FColor>& FlowData, int& Width, int& Height);
 
+	/** Get velocity data (2D motion vectors) */
+	UFUNCTION(BlueprintPure, Category = "unrealcv")
+	void GetVelocity(TArray<FVector2D>& VelocityData, int& Width, int& Height);
+
 	/** Get object mask data, the annotation color can be extracted from FObjectAnnotator */
 	UFUNCTION(BlueprintPure, Category = "unrealcv")
 	void GetSeg(TArray<FColor>& ObjMaskData, int& Width, int& Height, ESegMode SegMode = ESegMode::AnnotationComponent);
@@ -191,6 +195,8 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "unrealcv")
 	class UFlowCamSensor* FlowCamSensor;
 
+	UPROPERTY(EditDefaultsOnly, Category = "unrealcv")
+	class UVelocityCamSensor* VelocityCamSensor;
 
 	/** This preview camera is used for UE version < 4.17 which only support UCameraComponent PIP preview
 	See the difference between

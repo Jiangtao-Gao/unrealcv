@@ -55,6 +55,8 @@ private:
 
 	FExecStatus GetCameraFlow(const TArray<FString>& Args);
 
+	FExecStatus GetCameraVelocity(const TArray<FString>& Args);
+
 	FExecStatus GetCameraObjMask(const TArray<FString>& Args);
 
 	FExecStatus MoveTo(const TArray<FString>& Args);
