@@ -30,6 +30,7 @@ public:
 
 	void SetFilmSize(int Width, int Height);
 	virtual void BeginPlay() override;
+	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 private:
 	/** Material to read velocity buffer */
@@ -39,4 +40,11 @@ private:
 	/** Material instance for velocity reading */
 	UPROPERTY()
 	UMaterialInstanceDynamic* VelocityMaterialInstance;
+
+	/** Track previous frame transform for velocity calculation */
+	FTransform PreviousFrameTransform;
+	bool bHasPreviousFrame;
+	
+	/** Force update of previous frame data */
+	void UpdatePreviousFrameTransform();
 };

@@ -41,10 +41,13 @@ UFusionCamSensor::UFusionCamSensor(const FObjectInitializer& ObjectInitializer)
 	// FlowCamSensor is created later to avoid template mismatch issues
 	// Unhandled Exception: EXCEPTION_ACCESS_VIOLATION reading address 0x0000000000000008 UnrealEditor_Engine UnrealEditor_UnrealCV!AUnrealcvWorldController::OpenLevel() [C:\Users\hulc\Desktop\HUAWEI_Project\Plugins\unrealcv\Source\UnrealCV\Private\Controller\WorldController.cpp:90]
 	// FlowCamSensor = nullptr;
-	ComponentName = FString::Printf(TEXT("%s_%s"), *this->GetName(), TEXT("FlowCamSensor"));
-	FlowCamSensor = CreateDefaultSubobject<UFlowCamSensor>(*ComponentName);
+	
+	// TEMPORARILY DISABLED FOR TESTING VelocityCamSensor
+	FlowCamSensor = nullptr;
+	// ComponentName = FString::Printf(TEXT("%s_%s"), *this->GetName(), TEXT("FlowCamSensor"));
+	// FlowCamSensor = CreateDefaultSubobject<UFlowCamSensor>(*ComponentName);
 	// FlowCamSensor = NewObject<UFlowCamSensor>(this, UFlowCamSensor::StaticClass()); /*NewObject with empty name can't be used to create default subobjects*/
-	FusionSensors.Add(FlowCamSensor);
+	// FusionSensors.Add(FlowCamSensor);
 
 	// VelocityCamSensor - similar to FlowCamSensor
 	ComponentName = FString::Printf(TEXT("%s_%s"), *this->GetName(), TEXT("VelocityCamSensor"));
@@ -96,26 +99,29 @@ void UFusionCamSensor::BeginPlay()
 	Super::BeginPlay();
 
 	// LogOutputDevice: Error: Ensure condition failed: false  [File:D:\build\++UE5\Sync\Engine\Source\Runtime\Engine\Private\Components\SceneComponent.cpp] [Line: 2104] 
+	// TEMPORARILY DISABLED FOR TESTING VelocityCamSensor
 	// LogOutputDevice: Error: Template Mismatch during attachment. Attaching instanced component to template component. Parent 'FusionCamSensor_GEN_VARIABLE' (Owner 'None') Self 'FusionCamSensor_GEN_VARIABLE_FlowCamSensor' (Owner 'BP_Drone01_C_1').
 	// So we have to attach FlowCamSensor after the actor is spawned, in BeginPlay.
 	// If we put this in the ctor, I think all the blueprints have to be rebuild to fix this bug.
 	// Howerver, because we put the AttachToComponent here, we can no longger use editor to adjust the FlowCam transform in blueprint.
-	if (IsValid(FlowCamSensor))
-	{
-		// Ensure condition failed: !bRegistered  [File:D:\build\++UE5\Sync\Engine\Source\Runtime\Engine\Private\Components\SceneComponent.cpp] [Line: 1958] 
-		// SetupAttachment should only be used to initialize AttachParent and AttachSocketName for a future AttachToComponent. Once a component is registered you must use AttachToComponent. Owner [/Game/SuburbNeighborhoodHousePack/Maps/SuburbNeighborhood_Day.SuburbNeighborhood_Day:PersistentLevel.BP_Character_C_1], InParent [FusionCamSensor], InSocketName [None]
-		// FlowCamSensor->SetupAttachment(this);
+	// if (IsValid(FlowCamSensor))
+	// {
+	// 	// Ensure condition failed: !bRegistered  [File:D:\build\++UE5\Sync\Engine\Source\Runtime\Engine\Private\Components\SceneComponent.cpp] [Line: 1958] 
+	// 	// SetupAttachment should only be used to initialize AttachParent and AttachSocketName for a future AttachToComponent. Once a component is registered you must use AttachToComponent. Owner [/Game/SuburbNeighborhoodHousePack/Maps/SuburbNeighborhood_Day.SuburbNeighborhood_Day:PersistentLevel.BP_Character_C_1], InParent [FusionCamSensor], InSocketName [None]
+	// 	// FlowCamSensor->SetupAttachment(this);
 
-		FlowCamSensor->AttachToComponent(this, FAttachmentTransformRules::KeepRelativeTransform);
-	    const FTransform LitTransform = LitCamSensor->GetComponentTransform();
-	    FlowCamSensor->SetWorldTransform(LitTransform);
-		// const FTransform LitRelativeTransform = LitCamSensor->GetRelativeTransform();
-		// FlowCamSensor->SetRelativeTransform(LitRelativeTransform);
-	}
-	else 
-	{
-		UE_LOG(LogUnrealCV, Error, TEXT("FlowCamSensor is not initialized. Flow data will be empty."));
-	}
+	// 	FlowCamSensor->AttachToComponent(this, FAttachmentTransformRules::KeepRelativeTransform);
+	//     const FTransform LitTransform = LitCamSensor->GetComponentTransform();
+	//     FlowCamSensor->SetWorldTransform(LitTransform);
+	// 	// const FTransform LitRelativeTransform = LitCamSensor->GetRelativeTransform();
+	// 	// FlowCamSensor->SetRelativeTransform(LitRelativeTransform);
+	// }
+	// else 
+	// {
+	// 	UE_LOG(LogUnrealCV, Error, TEXT("FlowCamSensor is not initialized. Flow data will be empty."));
+	// }
+	
+	UE_LOG(LogUnrealCV, Warning, TEXT("FlowCamSensor is DISABLED for testing VelocityCamSensor"));
 
 	// Attach VelocityCamSensor - same as FlowCamSensor
 	if (IsValid(VelocityCamSensor))
@@ -249,14 +255,16 @@ void UFusionCamSensor::SetFilmSize(int Width, int Height)
 
 	// There are still bugs in compiled blueprints, I tried to fix them in the ctor, but it still fails.
 	// So I have to manually init the texture target for FlowCamSensor and VelocityCamSensor.
-	if (IsValid(FlowCamSensor))
-	{
-		FlowCamSensor->SetFilmSize(Width, Height);
-	}
-	else
-	{
-		UE_LOG(LogUnrealCV, Error, TEXT("FlowCamSensor is not initialized. Flow data will be empty."));
-	}
+	
+	// TEMPORARILY DISABLED FOR TESTING VelocityCamSensor
+	// if (IsValid(FlowCamSensor))
+	// {
+	// 	FlowCamSensor->SetFilmSize(Width, Height);
+	// }
+	// else
+	// {
+	// 	UE_LOG(LogUnrealCV, Error, TEXT("FlowCamSensor is not initialized. Flow data will be empty."));
+	// }
 
 	if (IsValid(VelocityCamSensor))
 	{
